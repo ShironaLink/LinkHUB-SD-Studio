@@ -229,3 +229,11 @@ sdgen.bat --help
 - `setup.bat` / `setup.ps1` / `start.bat` / `SDStudio.bat` — 導入と起動
 - 詠唱補助装置は別のリポジトリ [ShironaLink/shirona-prompt-tool](https://github.com/ShironaLink/shirona-prompt-tool) から
   `setup.bat` が取ってきます。同梱はしていません（画像・キャラクター素材は再配布・改変禁止）。
+
+## ライセンス
+
+Apache License 2.0（[LICENSE](LICENSE) と [NOTICE](NOTICE) を参照）。Copyright 2026 ShironaLink
+
+このリポジトリにあるもの（画面・コマンド・導入用のスクリプト・見本のレシピ）が対象です。
+**ComfyUI 本体・生成モデル・LoRA・詠唱補助装置は含まれません。** それぞれの配布元が定める条件に従ってください
+（ComfyUI は GPL-3.0 で配布されています。このツールは ComfyUI を書き換えず、起動時にカスタムノードとして読み込ませるだけです）。

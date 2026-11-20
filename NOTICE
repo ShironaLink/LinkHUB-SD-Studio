@@ -1,0 +1,6 @@
+SD Studio (LinkHUB-SD-Studio)
+Copyright 2026 ShironaLink
+
+This product is a tool that runs on top of ComfyUI. ComfyUI itself, the
+generation models, LoRAs and the prompt tool fetched by setup.bat are not
+part of this repository and are distributed under their own terms.
