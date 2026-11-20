@@ -141,9 +141,19 @@ def ensure_engine():
     # `start` gives it its own (minimised) window that outlives this CLI;
     # closing that window is also a way to stop the engine. The command line is
     # built by hand so the path is always quoted, whatever characters it has.
+    #
+    # The three DEVNULLs matter when sdgen's own output is captured (PowerShell
+    # `$o = & .\sdgen.bat ...`, Python subprocess.run(capture_output=True)).
+    # Without them Windows hands our stdout pipe on to `cmd /c start`, the
+    # engine inherits it from there, and the caller then waits for a pipe that
+    # stays open until the engine exits - it "hangs" after the image is done.
+    # With explicit handles, Python limits inheritance to exactly those three.
+    # The engine window is unaffected: `start` gives it a console of its own.
     comspec = os.environ.get("ComSpec", "cmd.exe")
     bat = os.path.join(ROOT, "start.bat")
-    subprocess.Popen(f'"{comspec}" /c start "SD Studio engine" /min "{bat}"', cwd=ROOT)
+    subprocess.Popen(f'"{comspec}" /c start "SD Studio engine" /min "{bat}"', cwd=ROOT,
+                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL)
     for _ in range(300):
         time.sleep(1)
         if engine_state() == "studio":
