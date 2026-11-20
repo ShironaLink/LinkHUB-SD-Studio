@@ -772,7 +772,7 @@ function connectWS() {
       for (const im of msg.data.output.images) {
         if (im.type !== "output") continue;
         addToGallery(im);
-        showPreview(outUrl(im));
+        showPreview(imgUrl(im));
       }
     } else if (msg.type === "execution_success") {
       document.getElementById("status").textContent = "完了";
