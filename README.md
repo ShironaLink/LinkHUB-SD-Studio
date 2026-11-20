@@ -155,6 +155,23 @@ ComfyUI をいつも使うときのポート（8188）を SD Studio も使いま
 
 `loras/` に置きます。生成画面で選べます。Anima 用の LoRA は Anima のモデルにしか効きません（SDXL 用も同様）。
 
+### 透過PNG（Anima 系・任意）
+
+背景のない透過 PNG を直接作れます。次の2つを置くと、Anima 系のモデルを選んだときに生成画面へ
+「透過PNG」のスイッチが出ます（入手先: [localai0301/Anima-RGBA](https://huggingface.co/localai0301/Anima-RGBA)、Apache-2.0）。
+
+| 置き場所（ComfyUI の `models/` 以下） | ファイル |
+|---|---|
+| `vae/` | `anima_rgba_vae.safetensors` |
+| `loras/` | `anima_rgba_lora.safetensors` |
+
+スイッチを入れると、専用の VAE への差し替え、専用 LoRA（強度 1.0）、プロンプトの `transparent background` を
+自動で付けます。レシピの「背景・場所」は使いません。大量生成のランにも記録されるので、選別画面の「採用を本生成」も
+透過のまま仕上げます。名前を変えずに置いてください。
+
+- レシピのほかの要素（ライティング・構図など）に場所を表す言葉があると、背景が描かれて透過にならないことがあります
+- この VAE を読めるのは、4 チャンネルの VAE に対応した ComfyUI です。読み込みでエラーになるときは ComfyUI を更新してください
+
 ---
 
 ## 使い方
@@ -238,6 +255,9 @@ sdgen.bat "same prompt" --model tekito --i2i base.png --denoise 0.55
 rem レシピから28枚をラフで積む（すぐ戻る。続きは選別画面で）
 sdgen.bat --model tekito --run 28 --size 832x1216 --rough 0.65
 
+rem 透過PNG（Anima 系のみ。単発・--run・--i2i のどれにも付けられる）
+sdgen.bat --model tekito --run 28 --size 832x1216 --rough 0.65 --alpha
+
 sdgen.bat --status
 sdgen.bat --stop
 sdgen.bat --help
@@ -281,12 +301,15 @@ Windows では、フォルダ名やモデル名が英数字だけなら気にす
 | 生成がとても遅い | セットアップの結果に「GPU を使えない」と出ていないか（Mac は「MPS を使えない」） |
 | モデルが一覧に出ない | 置き場所（`checkpoints` か `diffusion_models` か）。置いたあと「モデル再読込」を押したか |
 | Anima のモデルでエラーになる | `qwen_3_06b_base.safetensors` と `qwen_image_vae.safetensors` が名前を変えずに置いてあるか |
+| 「透過PNG」のスイッチが出ない・押せない | Anima 系のモデルを選んでいるか。`anima_rgba_vae.safetensors` と `anima_rgba_lora.safetensors` が名前を変えずに置いてあるか（スイッチの下に足りないファイルが出ます） |
+| 透過PNGで VAE の読み込みエラーになる | ComfyUI が古い。更新する |
+| 透過PNGなのに背景が付く | プロンプトやレシピの要素に場所・部屋・空などの言葉が入っていないか |
 | Windows: VRAM が足りない | `config.bat` の `COMFY_ARGS` に `--lowvram` を入れる |
 | 詠唱補助装置が開かない | `prompt-tool/index.html` があるか。無ければセットアップをもう一度実行する |
 
 ## 同梱物と出典
 
-- `custom_nodes/sd_studio_ui/` — 画面とAPI（ComfyUI のカスタムノード。`extra_model_paths.yaml` 経由で読み込む）
+- `custom_nodes/sd_studio_ui/` — 画面とAPI、透過PNGの img2img 用ノード1つ（ComfyUI のカスタムノード。`extra_model_paths.yaml` 経由で読み込む）
 - `sdgen.py` — コマンド本体（Windows は `sdgen.bat`、Mac は `sdgen.sh` から呼ぶ）
 - `wildcards/` — 見本のレシピ
 - Windows 用: `setup.bat` / `setup.ps1` / `start.bat` / `SDStudio.bat` / `sdgen.bat`

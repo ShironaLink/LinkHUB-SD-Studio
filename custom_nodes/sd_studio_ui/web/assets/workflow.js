@@ -17,6 +17,24 @@ const ARCH = {
 };
 const ARCH_ORDER = ["anima", "z_image", "sdxl", "unknown"];
 
+// Transparent (RGBA) output for Anima: a 4-channel VAE plus the LoRA trained
+// against it (huggingface.co/localai0301/Anima-RGBA). Fixed file names, like
+// the per-arch parts above. The server reports whether both are installed.
+const ALPHA = {
+  vae: "anima_rgba_vae.safetensors",
+  lora: "anima_rgba_lora.safetensors",
+  strength: 1.0,              // the author's tested value; 1.5 adds debris
+  trigger: "transparent background",
+  skipSlots: ["background"],  // a drawn location fights the trigger
+};
+
+/** Prompt with the transparency trigger in front (no-op if already present). */
+function alphaPrompt(p) {
+  p = (p || "").trim();
+  if (/transparent background/i.test(p)) return p;
+  return p ? `${ALPHA.trigger}, ${p}` : ALPHA.trigger;
+}
+
 /**
  * Build a ComfyUI prompt graph.
  *
@@ -33,11 +51,16 @@ const ARCH_ORDER = ["anima", "z_image", "sdxl", "unknown"];
  * Passing `i2iImage` (a filename already in ComfyUI's input dir) switches the
  * graph to img2img and uses `denoise`; width/height/batch are then ignored
  * because the reference image dictates the latent size.
+ *
+ * `alpha: true` (Anima only) swaps in the RGBA VAE, adds its LoRA and the
+ * trigger, and makes img2img keep the reference's alpha. SaveImage then
+ * writes RGBA PNGs.
  */
 function buildWorkflow(o) {
   const m = o.model;
   const g = {};
   let model, clip, vae;
+  const alpha = !!o.alpha && m.kind !== "ckpt" && m.arch === "anima";
 
   if (m.kind === "ckpt") {
     g["1"] = { class_type: "CheckpointLoaderSimple", inputs: { ckpt_name: m.name } };
@@ -46,7 +69,7 @@ function buildWorkflow(o) {
     const a = ARCH[m.arch].clip ? ARCH[m.arch] : ARCH.anima; // unknown: try anima parts
     g["1"] = { class_type: "UNETLoader", inputs: { unet_name: m.name, weight_dtype: "default" } };
     g["8"] = { class_type: "CLIPLoader", inputs: { clip_name: a.clip[0], type: a.clip[1], device: "default" } };
-    g["9"] = { class_type: "VAELoader", inputs: { vae_name: a.vae } };
+    g["9"] = { class_type: "VAELoader", inputs: { vae_name: alpha ? ALPHA.vae : a.vae } };
     model = ["1", 0]; clip = ["8", 0]; vae = ["9", 0];
     if (a.shift) {
       g["12"] = { class_type: "ModelSamplingAuraFlow", inputs: { model, shift: a.shift } };
@@ -54,8 +77,12 @@ function buildWorkflow(o) {
     }
   }
 
+  const loras = [...(o.loras || [])];
+  if (alpha && !loras.some(l => l.name === ALPHA.lora)) {
+    loras.push({ name: ALPHA.lora, strength: ALPHA.strength });
+  }
   let id = 20;
-  for (const lora of o.loras || []) {
+  for (const lora of loras) {
     if (!lora.name) continue;
     if (m.kind === "ckpt") {
       g[String(id)] = { class_type: "LoraLoader", inputs: {
@@ -70,7 +97,7 @@ function buildWorkflow(o) {
     id++;
   }
 
-  g["2"] = { class_type: "CLIPTextEncode", inputs: { text: o.prompt, clip } };
+  g["2"] = { class_type: "CLIPTextEncode", inputs: { text: alpha ? alphaPrompt(o.prompt) : o.prompt, clip } };
   if (m.arch === "z_image") {
     // turbo runs at cfg 1: feed a zeroed-out conditioning as negative
     g["3"] = { class_type: "ConditioningZeroOut", inputs: { conditioning: ["2", 0] } };
@@ -81,7 +108,13 @@ function buildWorkflow(o) {
   let denoise = 1;
   if (o.i2iImage) {
     g["40"] = { class_type: "LoadImage", inputs: { image: o.i2iImage } };
-    if (o.width && o.height) {
+    if (alpha) {
+      // The RGBA VAE's encoder expects RGB composited over white plus alpha
+      // as a 4th channel; the node builds that (and resizes when promoting).
+      g["42"] = { class_type: "SDStudioAlphaPrep", inputs: {
+        image: ["40", 0], mask: ["40", 1], width: o.width || 0, height: o.height || 0 } };
+      g["4"] = { class_type: "VAEEncode", inputs: { pixels: ["42", 0], vae } };
+    } else if (o.width && o.height) {
       // promoting a rough render: scale the reference up to the target size first
       g["41"] = { class_type: "ImageScale", inputs: {
         image: ["40", 0], width: o.width, height: o.height,

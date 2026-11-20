@@ -220,6 +220,12 @@
   <div id="loras"></div>
   <button id="addLora">＋ LoRAを選んで追加</button>
 
+  <div id="alphaBox" style="display:none">
+    <label>透過PNG（Anima系のみ）</label>
+    <label class="chk"><input type="checkbox" id="alpha"> 背景を抜いて透過PNGで出す</label>
+    <div class="dim-note" id="alphaNote"></div>
+  </div>
+
   <label>参照画像 (img2img)</label>
   <div id="i2iDrop">クリックで画像を選択（未設定＝テキストから生成）</div>
   <input type="file" id="i2iFile" accept="image/*" hidden>
@@ -476,7 +482,35 @@ function renderModelCard(applyDefaults) {
     warn = "このモデルの系統を判別できませんでした。生成に失敗する可能性があります。";
   }
   document.getElementById("status").textContent = warn;
+  syncAlpha();
 }
+
+// ---------- transparent output ----------
+/** True when the switch is on and usable for the current model. */
+function alphaOn() {
+  const box = document.getElementById("alphaBox"), cb = document.getElementById("alpha");
+  return box.style.display !== "none" && !cb.disabled && cb.checked;
+}
+
+/** Show the switch for Anima models, gate it on the installed kit, keep the recipe in step. */
+function syncAlpha() {
+  const box = document.getElementById("alphaBox"), cb = document.getElementById("alpha");
+  const note = document.getElementById("alphaNote");
+  const kit = (modelData && modelData.alpha) || {};
+  box.style.display = current && current.kind !== "ckpt" && current.arch === "anima" ? "block" : "none";
+  cb.disabled = !(kit.vae && kit.lora);
+  if (cb.disabled) {
+    note.textContent = "未配置: " + [!kit.vae && `vae/${ALPHA.vae}`, !kit.lora && `loras/${ALPHA.lora}`]
+      .filter(Boolean).join(", ");
+  } else {
+    note.textContent = cb.checked
+      ? `RGBA VAE・RGBA LoRA ${ALPHA.strength.toFixed(1)}・「${ALPHA.trigger}」を自動で付けます。レシピの背景・場所は使いません。`
+      : "";
+  }
+  Recipe.setAlpha(alphaOn());
+  refreshComposed();
+}
+document.getElementById("alpha").onchange = syncAlpha;
 
 // ---------- picker overlay ----------
 function openPicker(mode) {  // "model" | "lora"
@@ -620,6 +654,7 @@ function collectSettings() {
     batch: parseInt(v("batch")),
     steps: parseInt(v("steps")), cfg: parseFloat(v("cfg")),
     sampler: v("sampler"), scheduler: v("scheduler"),
+    alpha: alphaOn(),
   };
 }
 
@@ -644,8 +679,8 @@ function refreshComposed() {
   const wrap = document.getElementById("composedWrap");
   wrap.style.display = on ? "block" : "none";
   if (on) {
-    document.getElementById("composedPreview").textContent =
-      composePrompt(Recipe.currentDraw().prompt);
+    const p = composePrompt(Recipe.currentDraw().prompt);
+    document.getElementById("composedPreview").textContent = alphaOn() ? alphaPrompt(p) : p;
   }
 }
 

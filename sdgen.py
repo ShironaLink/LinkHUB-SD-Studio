@@ -8,7 +8,8 @@ Examples:
   sdgen "1girl, silver hair, smile" --model hoseki --lora mylora:0.8
   sdgen "same prompt" --model tekito --i2i base.png --denoise 0.55   # img2img
   sdgen --model tekito --run 28 --size 832x1216 --rough 0.65         # recipe batch
-  sdgen "1girl, transparent background" -m tekito --vae anima_rgba --lora anima_rgba:1.0   # RGBA PNG
+  sdgen "1girl, smile" -m tekito --alpha                            # transparent RGBA PNG
+  sdgen -m tekito --run 28 --size 832x1216 --rough 0.65 --alpha      # transparent batch
   sdgen --status
   sdgen --stop
 
@@ -76,6 +77,31 @@ ARCH = {
 }
 
 NEG_DEFAULT = "worst quality, low quality, bad hands"
+
+# Transparent output for Anima (huggingface.co/localai0301/Anima-RGBA).
+# Mirrors ALPHA in custom_nodes/sd_studio_ui/web/assets/workflow.js.
+ALPHA = {"vae": "anima_rgba_vae.safetensors", "lora": "anima_rgba_lora.safetensors",
+         "strength": 1.0, "trigger": "transparent background", "skip_slots": ["background"]}
+
+
+def alpha_prompt(p):
+    """Prompt with the transparency trigger in front (no-op if already present)."""
+    p = (p or "").strip()
+    if "transparent background" in p.lower():
+        return p
+    return f"{ALPHA['trigger']}, {p}" if p else ALPHA["trigger"]
+
+
+def check_alpha(a, model, info):
+    if not a.alpha:
+        return
+    if model["kind"] == "ckpt" or model["arch"] != "anima":
+        sys.exit("--alpha works only with Anima models")
+    kit = info.get("alpha") or {}
+    missing = [path for path, ok in ((f"vae/{ALPHA['vae']}", kit.get("vae")),
+                                     (f"loras/{ALPHA['lora']}", kit.get("lora"))) if not ok]
+    if missing:
+        sys.exit("--alpha needs these files in ComfyUI/models: " + ", ".join(missing))
 
 
 def api_get(path, timeout=5):
@@ -229,6 +255,9 @@ def resolve(query, entries, label):
 def build_graph(a, model, loras, models_info):
     arch = ARCH[model["arch"]]
     g = {}
+    alpha = getattr(a, "alpha", False) and model["kind"] != "ckpt" and model["arch"] == "anima"
+    if alpha and all(n != ALPHA["lora"] for n, _ in loras):
+        loras = loras + [(ALPHA["lora"], ALPHA["strength"])]
     if model["kind"] == "ckpt":
         g["1"] = {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": model["name"]}}
         m, clip, vae = ["1", 0], ["1", 1], ["1", 2]
@@ -236,7 +265,8 @@ def build_graph(a, model, loras, models_info):
         comp = arch if "clip" in arch else ARCH["anima"]
         g["1"] = {"class_type": "UNETLoader", "inputs": {"unet_name": model["name"], "weight_dtype": "default"}}
         g["8"] = {"class_type": "CLIPLoader", "inputs": {"clip_name": comp["clip"][0], "type": comp["clip"][1], "device": "default"}}
-        g["9"] = {"class_type": "VAELoader", "inputs": {"vae_name": getattr(a, "vae", None) or comp["vae"]}}
+        vae_name = ALPHA["vae"] if alpha else (getattr(a, "vae", None) or comp["vae"])
+        g["9"] = {"class_type": "VAELoader", "inputs": {"vae_name": vae_name}}
         m, clip, vae = ["1", 0], ["8", 0], ["9", 0]
         if "shift" in comp:
             g["12"] = {"class_type": "ModelSamplingAuraFlow", "inputs": {"model": m, "shift": comp["shift"]}}
@@ -255,7 +285,8 @@ def build_graph(a, model, loras, models_info):
             m = [str(nid), 0]
         nid += 1
 
-    g["2"] = {"class_type": "CLIPTextEncode", "inputs": {"text": a.prompt, "clip": clip}}
+    g["2"] = {"class_type": "CLIPTextEncode", "inputs": {
+        "text": alpha_prompt(a.prompt) if alpha else a.prompt, "clip": clip}}
     if model["arch"] == "z_image":
         g["3"] = {"class_type": "ConditioningZeroOut", "inputs": {"conditioning": ["2", 0]}}
     else:
@@ -268,7 +299,13 @@ def build_graph(a, model, loras, models_info):
             sys.exit(f"i2i image not found: {src}")
         dst_name = upload_image(src, f"sdgen_{uuid.uuid4().hex[:8]}_{os.path.basename(src)}")
         g["40"] = {"class_type": "LoadImage", "inputs": {"image": dst_name}}
-        g["4"] = {"class_type": "VAEEncode", "inputs": {"pixels": ["40", 0], "vae": vae}}
+        pixels = ["40", 0]
+        if alpha:
+            # RGB over white + alpha as a 4th channel: the RGBA VAE's encoder input
+            g["42"] = {"class_type": "SDStudioAlphaPrep", "inputs": {
+                "image": ["40", 0], "mask": ["40", 1], "width": 0, "height": 0}}
+            pixels = ["42", 0]
+        g["4"] = {"class_type": "VAEEncode", "inputs": {"pixels": pixels, "vae": vae}}
         denoise = a.denoise
     else:
         w, h = map(int, a.size.lower().split("x"))
@@ -321,12 +358,15 @@ def generate(a):
         if model["kind"] == "ckpt":
             sys.exit("--vae is not supported for checkpoint models (their VAE is built in)")
         a.vae = resolve(a.vae, [{"name": n} for n in api_get("/models/vae")], "vae")["name"]
+    check_alpha(a, model, info)
 
     print(f"model: {model['name']} [{model['arch']}]", flush=True)
     for n, s in loras:
         print(f"lora: {n} @{s}", flush=True)
     if a.vae:
         print(f"vae: {a.vae}", flush=True)
+    if a.alpha:
+        print(f"alpha: on ({ALPHA['vae']} + {ALPHA['lora']} @{ALPHA['strength']})", flush=True)
 
     g = build_graph(a, model, loras, info)
     pid = api_post("/prompt", {"prompt": g, "client_id": CLIENT_ID})["prompt_id"]
@@ -390,6 +430,7 @@ def run_batch(a):
         name, _, strength = spec.partition(":")
         entry = resolve(name, info["loras"], "lora")
         loras.append((entry["name"], float(strength) if strength else 0.8))
+    check_alpha(a, model, info)
 
     recipe = api_get("/studio/api/recipe")
     if not recipe.get("slots"):
@@ -417,14 +458,17 @@ def run_batch(a):
         "final": {"width": width, "height": height, "steps": final_steps},
         "render": render,
         "template": recipe["template"],
+        **({"alpha": True} if a.alpha else {}),  # the review UI's promotion reads this back
     }})["run_id"]
 
+    skip = ALPHA["skip_slots"] if a.alpha else []  # a drawn location fights the trigger
     items = []
     for i in range(a.run):
         picks = {s["key"]: random.choice(s["options"])
-                 for s in recipe["slots"] if s["options"]}
+                 for s in recipe["slots"] if s["options"] and s["key"] not in skip}
+        prompt = compose_prompt(recipe, picks)
         items.append({"index": i, "seed": random.randrange(2 ** 48),
-                      "prompt": compose_prompt(recipe, picks),
+                      "prompt": alpha_prompt(prompt) if a.alpha else prompt,
                       "picks": {k: v["label"] for k, v in picks.items()}})
     api_post(f"/studio/api/runs/{run_id}/items", {"items": items})
 
@@ -465,8 +509,11 @@ def main():
     p.add_argument("--model", "-m", help="model name (partial match ok: hoseki, tekito, rin...)")
     p.add_argument("--lora", "-l", action="append", metavar="NAME[:STRENGTH]",
                    help="add a lora, repeatable (default strength 0.8)")
-    p.add_argument("--vae", help="override the arch's VAE, partial match ok (single t2i only: --run/--i2i "
-                                 "would lose the alpha when promoting or re-encoding)")
+    p.add_argument("--alpha", action="store_true",
+                   help="transparent RGBA PNG (Anima only): RGBA VAE + its LoRA + trigger; "
+                        "works with --run (no background slot) and --i2i (keeps the alpha)")
+    p.add_argument("--vae", help="override the arch's VAE, partial match ok (single t2i only; "
+                                 "for transparency use --alpha)")
     p.add_argument("--negative", "-n", default=NEG_DEFAULT)
     p.add_argument("--i2i", metavar="IMAGE", help="reference image for img2img")
     p.add_argument("--denoise", type=float, default=0.6, help="i2i denoise (default 0.6)")
@@ -488,7 +535,9 @@ def main():
     a = p.parse_args()
 
     if a.vae and (a.run or a.i2i):
-        p.error("--vae works only with single t2i generation (not --run or --i2i)")
+        p.error("--vae works only with single t2i generation (not --run or --i2i); use --alpha")
+    if a.vae and a.alpha:
+        p.error("--alpha picks its own VAE; drop --vae")
     if a.stop:
         stop_engine()
     elif a.status:

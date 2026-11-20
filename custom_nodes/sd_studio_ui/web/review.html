@@ -378,6 +378,7 @@ function renderMeta() {
   $("meta").innerHTML = [
     `モデル: ${(m.model || "").replace(/\.safetensors$/, "")}`,
     loras && `LoRA: ${loras}`,
+    m.alpha && "透過PNG（RGBA VAE + RGBA LoRA）",
     `生成: ${r.width}x${r.height} / ${r.steps}steps / CFG ${m.cfg}`,
     run.mode === "rough" && `本生成の想定: ${f.width}x${f.height} / ${f.steps}steps`,
     `sampler: ${m.sampler} / ${m.scheduler}`,
@@ -488,6 +489,7 @@ async function promote() {
         model: modelRef(), loras: m.loras, prompt: it.prompt, negative: m.negative,
         width: f.width, height: f.height, steps, cfg: m.cfg,
         sampler: m.sampler, scheduler: m.scheduler, seed: it.seed,
+        alpha: !!m.alpha,  // a transparent run promotes to transparent, alpha carried through i2i
         prefix: `${newRun}/${String(n).padStart(5, "0")}`,
       };
       if (mode === "i2i") {

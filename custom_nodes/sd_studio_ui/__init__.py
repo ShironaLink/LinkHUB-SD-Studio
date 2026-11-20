@@ -43,6 +43,10 @@ ARCH_COMPONENTS = {
     "z_image": {"clip": "qwen_3_4b.safetensors", "vae": "ae.safetensors"},
 }
 
+# Transparent output for Anima (huggingface.co/localai0301/Anima-RGBA).
+# Same file names as ALPHA in web/assets/workflow.js.
+ALPHA_KIT = {"vae": "anima_rgba_vae.safetensors", "lora": "anima_rgba_lora.safetensors"}
+
 
 def _read_header_keys(path, max_header=100_000_000):
     with open(path, "rb") as fh:
@@ -295,6 +299,10 @@ async def studio_models(request):
         "diffusion_models": _list_with_arch("diffusion_models"),
         "loras": _list_with_arch("loras"),
         "components": components,
+        "alpha": {
+            "vae": ALPHA_KIT["vae"] in vaes,
+            "lora": ALPHA_KIT["lora"] in set(folder_paths.get_filename_list("loras")),
+        },
     })
 
 
@@ -612,5 +620,54 @@ async def studio_engine_stop(request):
     return web.json_response({"status": "stopping"})
 
 
-NODE_CLASS_MAPPINGS = {}
-NODE_DISPLAY_NAME_MAPPINGS = {}
+class SDStudioAlphaPrep:
+    """RGBA image -> the 4-channel input the Anima RGBA VAE's encoder expects.
+
+    That encoder was trained on RGB composited over white, plus alpha as a 4th
+    channel. LoadImage hands over straight RGB (undefined where alpha is 0) and
+    an inverted alpha as MASK, so encoding it as-is would bake whatever colour
+    sits under the transparent area into the latent. Optionally resizes with
+    lanczos, for promoting a rough render to the final size.
+    """
+    CATEGORY = "SD Studio"
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "prep"
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        size = {"default": 0, "min": 0, "max": 16384, "step": 8}
+        return {"required": {
+            "image": ("IMAGE",),
+            "mask": ("MASK",),
+            "width": ("INT", size),   # 0 = keep the source size
+            "height": ("INT", size),
+        }}
+
+    def prep(self, image, mask, width, height):
+        import numpy as np
+        import torch
+        from PIL import Image
+
+        def to_pil(t):
+            return Image.fromarray((t.clamp(0, 1).cpu().numpy() * 255).round().astype(np.uint8))
+
+        def to_tensor(im):
+            return torch.from_numpy(np.asarray(im).astype(np.float32) / 255.0)
+
+        out = []
+        for i in range(image.shape[0]):
+            rgb = image[i, ..., :3].float().cpu()
+            h, w = rgb.shape[:2]
+            m = mask[min(i, mask.shape[0] - 1)] if mask.dim() == 3 else mask
+            # LoadImage gives a 64x64 zero mask for images without alpha: opaque.
+            alpha = (1.0 - m.float().cpu()) if tuple(m.shape) == (h, w) else torch.ones((h, w))
+            comp = rgb * alpha[..., None] + (1.0 - alpha[..., None])
+            if width and height and (width, height) != (w, h):
+                comp = to_tensor(to_pil(comp).resize((width, height), Image.LANCZOS))
+                alpha = to_tensor(to_pil(alpha).resize((width, height), Image.LANCZOS))
+            out.append(torch.cat([comp, alpha[..., None]], dim=-1))
+        return (torch.stack(out),)
+
+
+NODE_CLASS_MAPPINGS = {"SDStudioAlphaPrep": SDStudioAlphaPrep}
+NODE_DISPLAY_NAME_MAPPINGS = {"SDStudioAlphaPrep": "SD Studio: RGBA → VAE input (white composite)"}

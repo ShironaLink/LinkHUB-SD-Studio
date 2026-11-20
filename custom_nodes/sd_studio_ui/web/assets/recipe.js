@@ -14,6 +14,9 @@ const Recipe = (() => {
   let draw = null;        // {picks: {key: {label, text}}, prompt}
   let ctx = null;         // supplied by index.html
   let editing = null;     // slot key currently open in the editor
+  let alpha = false;      // transparent output: ALPHA.skipSlots are left out of every draw
+
+  const skipped = key => alpha && ALPHA.skipSlots.includes(key);
 
   const $ = id => document.getElementById(id);
   const slotOf = key => recipe.slots.find(s => s.key === key);
@@ -65,6 +68,11 @@ const Recipe = (() => {
       for (const o of s.options) add(o.label, o.label);
       sel.value = state[s.key];
       sel.onchange = () => { state[s.key] = sel.value; reroll(); };
+      if (skipped(s.key)) {
+        sel.disabled = true;
+        row.style.opacity = 0.45;
+        row.title = "透過PNGのあいだは使わない（場所の指定が透過と衝突するため）";
+      }
 
       const edit = document.createElement("button");
       edit.className = "slot-edit";
@@ -85,7 +93,7 @@ const Recipe = (() => {
     const picks = {};
     for (const s of recipe.slots) {
       const mode = state[s.key];
-      if (mode === OFF || !s.options.length) continue;
+      if (mode === OFF || !s.options.length || skipped(s.key)) continue;
       picks[s.key] = mode === RANDOM ? pick(s.options) : (s.options.find(o => o.label === mode) || pick(s.options));
     }
     return picks;
@@ -215,6 +223,7 @@ const Recipe = (() => {
           render: { width: b.width, height: b.height, steps: b.steps },
           template: recipe.template,
           base_prompt: ctx.userPrompt(),
+          ...(s.alpha ? { alpha: true } : {}),  // promotion reads this back
         },
       });
 
@@ -223,11 +232,13 @@ const Recipe = (() => {
         const picks = drawPicks();
         const labels = {};
         for (const [k, v] of Object.entries(picks)) labels[k] = v.label;
+        // same join as the single shot: hand-written prompt first, draw after
+        const prompt = ctx.composePrompt(compose(picks));
         items.push({
           index: i,
           seed: Math.floor(Math.random() * 2 ** 48),
-          // same join as the single shot: hand-written prompt first, draw after
-          prompt: ctx.composePrompt(compose(picks)),
+          // the ledger keeps what was actually sent, trigger included
+          prompt: s.alpha ? alphaPrompt(prompt) : prompt,
           picks: labels,
         });
       }
@@ -238,6 +249,7 @@ const Recipe = (() => {
           model: s.model, loras: s.loras, prompt: it.prompt, negative: s.negative,
           width: b.width, height: b.height, batch: 1,
           steps: b.steps, cfg: s.cfg, sampler: s.sampler, scheduler: s.scheduler,
+          alpha: s.alpha,
           seed: it.seed, prefix: `${run_id}/${String(it.index).padStart(5, "0")}`,
         });
         await enqueue(graph, ctx.clientId);
@@ -278,9 +290,17 @@ const Recipe = (() => {
     load().then(updateEstimate);
   }
 
+  /** Turn transparent output on/off: greys out the skipped slots and redraws. */
+  function setAlpha(on) {
+    if (on === alpha) return;
+    alpha = on;
+    if (recipe && !recipe.error) { renderSlots(); reroll(); }
+  }
+
   return {
     init,
     reroll,
+    setAlpha,
     updateEstimate,
     enabled: () => $("useRecipe").checked && recipe && !recipe.error,
     currentDraw: () => draw,
