@@ -10,7 +10,7 @@ if not exist "config.bat" (
   pause
   exit 1
 )
-call "config.bat"
+call "%~dp0config.bat"
 
 set "ROOT=%~dp0"
 set "ROOT=%ROOT:~0,-1%"

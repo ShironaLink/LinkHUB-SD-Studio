@@ -13,7 +13,7 @@ if not exist "%CURL%" (
 
 rem No config yet, or ComfyUI was moved since setup: run setup (again).
 if not exist "config.bat" goto setup
-call "config.bat"
+call "%~dp0config.bat"
 if not exist "%PYTHON%" goto setup
 if not exist "%COMFYUI_DIR%\main.py" goto setup
 goto ready
@@ -22,7 +22,7 @@ goto ready
 echo [SD Studio] Running setup first.
 call "%~dp0setup.bat"
 if not exist "config.bat" exit /b 1
-call "config.bat"
+call "%~dp0config.bat"
 if not exist "%PYTHON%" exit /b 1
 
 :ready
