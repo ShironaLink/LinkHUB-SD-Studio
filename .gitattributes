@@ -1,0 +1,5 @@
+* text=auto eol=lf
+# cmd needs CRLF, PowerShell 5.1 needs the BOM: keep these byte-for-byte.
+# (Later lines win, so these must stay below the catch-all above.)
+*.bat -text
+*.ps1 -text

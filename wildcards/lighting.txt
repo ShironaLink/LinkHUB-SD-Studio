@@ -1,0 +1,20 @@
+# ライティング — 時間帯と光源。背景と噛み合わないと破綻するので、
+# 当たり率が低い組み合わせは統計を見てから間引く。
+
+朝の斜光 | low morning sunlight raking across the scene
+逆光のリムライト | backlit, bright rim light tracing her outline
+木漏れ日 | dappled sunlight filtering through leaves
+夕焼けのオレンジ | warm orange sunset light, long shadows
+窓からの柔らかい光 | soft diffused light through a window
+街灯とネオン | streetlights and neon signs, mixed color temperature
+花火の閃光 | lit for an instant by fireworks overhead
+曇天の均一な光 | flat even light under an overcast sky
+ろうそくの灯り | candlelight, warm and unsteady, deep surrounding dark
+水面の反射光 | rippling light reflected off water onto her
+月明かり | moonlight, cool blue and quiet
+薄暗い室内の一灯 | a single lamp in a dim room, everything else falling into shadow
+
+# --- 2026-08-21 Claude追加分 ---
+水槽越しの揺れる青 | rippling blue aquarium light playing across her
+朝焼けのピンク | pink dawn gradient sky light, soft and cold
+映写機の光条 | a projector beam cutting through a dark room, dust motes glowing in the cone

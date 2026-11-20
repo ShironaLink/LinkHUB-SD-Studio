@@ -1,0 +1,15 @@
+# 画風 — 仕上げの質感。モデルの素の作風と喧嘩することがあるので、
+# モデルを替えたらこのスロットの当たり率は必ず変わる。
+
+繊細なアニメ塗り | crisp anime cel shading, clean linework
+厚塗り | thick painterly rendering, visible brush strokes
+水彩 | watercolor wash, soft bleeding edges
+淡いパステル | pale pastel palette, low saturation
+高彩度でコントラスト強め | vivid saturated colors, strong contrast
+フィルム写真風 | photographic finish, natural skin tones
+線画強め | bold confident outlines, graphic look
+光のエフェクト多め | heavy light effects, glow and lens bloom, floating particles
+透明感重視 | translucent luminous skin, light passing through hair
+レトロアニメ | retro 90s anime aesthetic, slightly grainy cel look
+モノクロに一色 | monochrome with a single accent color
+繊細な描き込み | extremely detailed rendering, intricate textures

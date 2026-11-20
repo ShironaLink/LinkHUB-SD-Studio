@@ -1,0 +1,5 @@
+# Lets ComfyUI find the SD Studio UI node without copying it into ComfyUI's
+# own custom_nodes folder. start.bat passes this file with
+# --extra-model-paths-config; relative paths resolve against this file.
+sd_studio:
+  custom_nodes: custom_nodes

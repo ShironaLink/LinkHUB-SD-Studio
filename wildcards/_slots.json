@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "note": "template の __key__ が各スロットの抽選結果に置き換わる。slots の並び順はUIの表示順（重要な順）で、プロンプトに出る順は template が決める。",
+  "template": "masterpiece, best quality, very aesthetic, 1girl, solo, __subject__, __hair__, __outfit__, __emotion__, __showcut__, __composition__, __camera__, __background__, __lighting__, __style__",
+  "slots": [
+    { "key": "showcut", "label": "魅せカット", "hero": true },
+    { "key": "composition", "label": "構図" },
+    { "key": "camera", "label": "カメラ" },
+    { "key": "emotion", "label": "表情・感情" },
+    { "key": "subject", "label": "被写体" },
+    { "key": "hair", "label": "髪" },
+    { "key": "outfit", "label": "服装" },
+    { "key": "background", "label": "背景・場所" },
+    { "key": "lighting", "label": "ライティング" },
+    { "key": "style", "label": "画風" }
+  ]
+}

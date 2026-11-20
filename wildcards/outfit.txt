@@ -1,0 +1,23 @@
+# 服装 — 布の量と質感。背景スロットと相性が出るので、
+# 当たりが偏ったら background.txt 側と合わせて調整する。
+
+セーラー服 | sailor school uniform, pleated skirt
+ブレザー制服 | blazer school uniform, loose necktie
+白いワンピース | white summer dress, thin fabric
+パーカーとショートパンツ | oversized hoodie and short pants
+ニットセーター | chunky knit sweater, sleeves past her hands
+浴衣 | yukata with a wide obi, traditional pattern
+メイド服 | maid uniform with a frilled apron
+ダッフルコートとマフラー | duffle coat and a long knitted scarf
+スポーツウェア | athletic wear, light and fitted
+大きめのシャツ一枚 | one oversized shirt, collar slipping off a shoulder
+ゴシックロリータ | gothic lolita dress, layered lace
+水着にパーカー | swimsuit with an open hoodie over it
+カーディガンと制服 | school uniform with a loose cardigan
+和装の巫女服 | miko outfit, white haori and red hakama
+
+# --- 2026-08-21 Claude追加分 ---
+白シャツにサスペンダー | white shirt with suspenders, rolled up sleeves
+黄色いレインコート | bright yellow raincoat, oversized hood
+冬の私服コーデ | winter casual outfit, beret and long coat, knit tights
+Tシャツとデニム | plain t-shirt and denim shorts, relaxed and casual

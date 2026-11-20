@@ -1,0 +1,39 @@
+# 背景・場所 — 空気を決める。ライティングと組で効く。
+
+放課後の教室 | empty classroom after school, desks in rows
+雨上がりの路地 | narrow alley after rain, puddles reflecting the sky
+桜並木 | row of cherry trees in full bloom, petals in the air
+図書室 | quiet library, tall shelves receding into shadow
+夏祭りの夜店 | night festival stalls, paper lanterns strung overhead
+海辺の堤防 | seaside breakwater, horizon behind her
+雪の降る駅のホーム | station platform in falling snow, empty tracks
+一面の花畑 | wide flower field stretching to the horizon
+カフェの窓際 | window seat in a cafe, street visible outside
+夕暮れの屋上 | rooftop at dusk, fence and distant skyline
+ネオンの街角 | neon-lit street corner at night, wet asphalt
+自室のベッドの上 | on her own bed, rumpled sheets, soft clutter around
+白背景スタジオ | plain white studio background, nothing but her
+夜の観覧車の下 | beneath a lit ferris wheel at night
+古い階段の途中 | halfway up an old stone stairway, greenery on both sides
+
+# --- 2026-08-21 Claude追加分 ---
+水族館の大水槽 | in front of a huge aquarium tank, deep blue water, a whale shark drifting past
+夜のコンビニの灯り | outside a convenience store at night, fluorescent light spilling onto the pavement
+プラネタリウムの星空 | inside a planetarium dome, projected stars sweeping overhead
+草に埋もれた廃線 | abandoned railway tracks overgrown with summer grass
+雷雨の窓辺 | beside a window in a thunderstorm, rain streaking down the glass
+屋上の物干し台 | on a rooftop laundry deck, white sheets billowing on the line
+
+# 単色パステル — 場所を描かず色だけで空気を作る。被写体が主役になり、
+# 切り抜き・グッズ化もしやすい。「白背景スタジオ」の色違いにあたる。
+# no scenery が無いと室内や壁が描き込まれる（Win側で実測）。
+パステルピンク単色 | plain pastel pink background, solid color backdrop, no scenery
+パステルミント単色 | plain pastel mint green background, solid color backdrop, no scenery
+パステルラベンダー単色 | plain pastel lavender background, solid color backdrop, no scenery
+パステルレモン単色 | plain pastel lemon yellow background, solid color backdrop, no scenery
+パステルスカイ単色 | plain pastel sky blue background, solid color backdrop, no scenery
+パステルピーチ単色 | plain pastel peach background, solid color backdrop, no scenery
+パステルアクア単色 | plain pastel aqua background, solid color backdrop, no scenery
+パステルコーラル単色 | plain pastel coral background, solid color backdrop, no scenery
+パステルクリーム単色 | plain pastel cream background, solid color backdrop, no scenery
+パステルグレー単色 | plain pastel grey background, solid color backdrop, no scenery

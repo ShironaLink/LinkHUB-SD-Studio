@@ -1,0 +1,14 @@
+# written by setup.bat (machine-specific paths)
+config.bat
+# generated images and run ledgers
+outputs/
+runs/
+# fetched by setup.bat from its own repository
+prompt-tool/
+prompt-tool.zip
+prompt-tool.tmp/
+__pycache__/
+*.log
+.DS_Store
+temp/
+engine.failed

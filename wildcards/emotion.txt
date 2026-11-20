@@ -1,0 +1,24 @@
+# 表情・感情 — 顔だけでなく画面全体の空気を引っ張る枠。
+# 「愛らしい雰囲気」のような画面全体に効く語を混ぜておくと、
+# エフェクトや色味まで引っ張られて当たりが増える。
+
+満面の笑み | beaming smile, pure joy
+はにかみ笑い | shy bashful smile, eyes glancing away
+照れて赤面 | blushing hard, flustered expression
+澄ました顔 | cool composed expression, unreadable
+いたずらっぽい流し目 | mischievous sidelong glance, one corner of her mouth raised
+泣きそうな瞳 | eyes welling up, trembling lower lip, holding it back
+驚いて目を丸くする | wide-eyed surprise, mouth slightly open
+眠たげ | drowsy half-lidded eyes, soft and unfocused
+愛らしい雰囲気 | endearing atmosphere, the whole frame feels adorable, sparkles in the air
+儚げな雰囲気 | fragile ephemeral atmosphere, everything softly fading at the edges
+多幸感 | overwhelming happiness, warm glow suffusing the scene
+少し寂しげ | quietly lonely mood, muted colors, distance in her eyes
+得意げ | proud and pleased with herself, chin up, smug little smile
+安心しきった顔 | completely at ease, relaxed and trusting expression
+息をのむ瞬間 | breath caught, lips parted, stopped in place
+
+# --- 2026-08-21 Claude追加分 ---
+泣き笑い | laughing through tears, wiping her eyes, relief washing over the scene
+静かな無防備の美 | caught in a serene unguarded moment, quiet stillness in the air
+抑えきれないワクワク | barely contained excitement, bouncing on her heels, the frame vibrating with energy

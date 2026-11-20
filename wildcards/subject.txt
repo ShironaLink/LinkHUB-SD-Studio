@@ -1,0 +1,24 @@
+# 被写体 — 髪色・瞳・年齢感などキャラの土台。
+# 特定キャラをLoRAで固定する回は、このスロットをOFFにするか
+# トリガーワード1行だけのファイルに差し替える。
+
+銀髪に青い瞳 | silver hair, blue eyes, pale skin
+黒髪に黒い瞳 | black hair, dark eyes, fair skin
+栗色の髪に琥珀の瞳 | chestnut hair, amber eyes
+金髪に緑の瞳 | blonde hair, green eyes
+藍色の髪に紫の瞳 | dark blue hair, violet eyes
+桃色の髪に桃色の瞳 | pink hair, pink eyes
+白髪に赤い瞳 | white hair, red eyes
+亜麻色の髪に灰色の瞳 | ash brown hair, grey eyes
+そばかすのある子 | light freckles across her nose, warm skin tone
+八重歯の子 | small fang peeking out when she smiles
+泣きぼくろ | a small beauty mark under one eye
+
+# --- 2026-08-21 Claude追加分 ---
+褐色肌に白髪金瞳 | dark tan skin, white hair, golden eyes
+オッドアイの銀紫 | heterochromia, one blue eye and one amber eye, silvery lavender hair
+黒髪に青のインナーカラー | black hair with electric blue inner color, teal eyes
+狐目のはちみつ色 | narrow fox-like eyes that curve when she smiles, honey colored hair
+銀狼の耳と尻尾 | wolf ears and a fluffy wolf tail, ash grey hair, pale gold eyes
+黒猫の耳 | black cat ears matching her black hair, luminous green eyes
+真紅の髪に翡翠の瞳 | deep crimson hair, jade green eyes, porcelain skin

@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SD Studio — 選別</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0a0a; --panel: #141414; --panel2: #1c1c1c; --border: #2a2a2a;
+    --text: #e5e5e5; --dim: #888; --accent: #fff;
+    --pick: #4ade80; --drop: #ef4444;
+  }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Hiragino Sans", sans-serif;
+    font-size: 13px; height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+  }
+  button, select {
+    background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 11px; font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  button:hover, select:hover { border-color: #555; }
+  button:disabled { opacity: .4; cursor: default; }
+  input[type=number] {
+    background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 8px; font-size: 12px; width: 70px; font-family: inherit;
+  }
+  /* ---- topbar ---- */
+  #top {
+    display: flex; align-items: center; gap: 10px; padding: 9px 16px;
+    border-bottom: 1px solid var(--border); background: var(--panel); flex-shrink: 0;
+  }
+  #top .spacer { flex: 1; }
+  #counts { color: var(--dim); font-size: 11px; }
+  #newHint { color: var(--pick); font-size: 11px; }
+  /* ---- body ---- */
+  #body { flex: 1; display: flex; overflow: hidden; }
+  #stage {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 18px; overflow: hidden; position: relative;
+  }
+  #stage img { max-width: 100%; max-height: 100%; border-radius: 8px; }
+  #stage .empty { color: #444; letter-spacing: .1em; }
+  #verdict {
+    position: absolute; top: 24px; left: 24px; font-size: 12px; font-weight: 600;
+    padding: 4px 12px; border-radius: 20px; display: none;
+  }
+  #verdict.pick { display: block; background: var(--pick); color: #000; }
+  #verdict.drop { display: block; background: var(--drop); color: #fff; }
+  /* ---- side ---- */
+  #side {
+    width: 300px; min-width: 300px; border-left: 1px solid var(--border);
+    background: var(--panel); padding: 16px; overflow-y: auto;
+  }
+  #side h2 { font-size: 11px; color: var(--dim); letter-spacing: .08em; margin: 16px 0 7px; font-weight: 600; }
+  #side h2:first-child { margin-top: 0; }
+  .pick-row { display: flex; gap: 8px; padding: 5px 0; border-bottom: 1px solid #1e1e1e; }
+  .pick-row .k { width: 74px; flex-shrink: 0; color: var(--dim); font-size: 11px; }
+  .pick-row .v { flex: 1; font-size: 12px; }
+  .pick-row.hero { background: var(--panel2); border-radius: 6px; padding: 7px; margin-bottom: 4px; border: none; }
+  .pick-row.hero .k { color: var(--accent); font-weight: 600; }
+  .pick-row.hero .v { font-weight: 600; }
+  #promptBox {
+    background: var(--panel2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px; font-size: 11px; line-height: 1.6; color: var(--dim);
+    max-height: 130px; overflow-y: auto; word-break: break-word;
+  }
+  .keys { color: var(--dim); font-size: 11px; line-height: 1.9; }
+  .keys b { color: var(--text); font-weight: 600; }
+  .judge { display: flex; gap: 8px; }
+  .judge button { flex: 1; padding: 9px; font-weight: 600; }
+  #btnPick.on { background: var(--pick); color: #000; border-color: var(--pick); }
+  #btnDrop.on { background: var(--drop); color: #fff; border-color: var(--drop); }
+  /* ---- filmstrip ---- */
+  #strip {
+    height: 118px; min-height: 118px; border-top: 1px solid var(--border);
+    display: flex; gap: 7px; padding: 9px; overflow-x: auto; overflow-y: hidden; background: var(--panel);
+  }
+  .cell { position: relative; height: 100%; flex-shrink: 0; }
+  /* width comes from the run's aspect ratio so lazy-loaded cells keep their box
+     before the image arrives — otherwise every unloaded thumbnail collapses to 0px */
+  .cell img {
+    height: 100%; width: var(--thumb-w, 66px); object-fit: cover;
+    border-radius: 5px; cursor: pointer;
+    border: 2px solid transparent; display: block; background: #1a1a1a;
+  }
+  .cell.focus img { border-color: var(--accent); }
+  .cell.pick img { border-color: var(--pick); }
+  .cell.drop img { opacity: .3; border-color: var(--drop); }
+  .cell.focus.pick img, .cell.focus.drop img { box-shadow: 0 0 0 2px var(--accent); }
+  .cell .pending {
+    height: 100%; width: var(--thumb-w, 66px); border-radius: 5px; border: 2px dashed var(--border);
+    display: flex; align-items: center; justify-content: center; color: #444; font-size: 10px;
+  }
+  /* ---- overlays ---- */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.82); backdrop-filter: blur(6px);
+    display: none; z-index: 100; align-items: center; justify-content: center; padding: 40px;
+  }
+  .overlay.open { display: flex; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    width: min(880px, 100%); max-height: 100%; display: flex; flex-direction: column; overflow: hidden;
+  }
+  .panel .head {
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+    font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 10px;
+  }
+  .panel .head .spacer { flex: 1; }
+  .panel .content { padding: 16px 18px; overflow-y: auto; }
+  .panel .foot { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
+  .stat-slot { margin-bottom: 20px; }
+  .stat-slot h3 { font-size: 12px; margin-bottom: 8px; color: var(--accent); }
+  .bar-row { display: flex; align-items: center; gap: 9px; margin-bottom: 4px; font-size: 12px; }
+  .bar-row .lbl { width: 210px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-row .bar { flex: 1; height: 9px; background: var(--panel2); border-radius: 5px; overflow: hidden; }
+  .bar-row .bar i { display: block; height: 100%; background: var(--pick); }
+  .bar-row .num { width: 96px; text-align: right; color: var(--dim); font-size: 11px; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; color: var(--dim); font-size: 11px; margin-bottom: 5px; }
+  #note { color: var(--dim); font-size: 11px; line-height: 1.6; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<div id="top">
+  <button onclick="location.href='/studio'">← 生成に戻る</button>
+  <button onclick="location.href='/studio/prompt'">詠唱補助装置</button>
+  <select id="runSel"></select>
+  <select id="filter">
+    <option value="all">全部</option>
+    <option value="unrated">未評価のみ</option>
+    <option value="pick">採用のみ</option>
+    <option value="drop">却下のみ</option>
+  </select>
+  <button id="reload">更新</button>
+  <span id="newHint"></span>
+  <span class="spacer"></span>
+  <span id="counts"></span>
+  <button id="openStats">採用率</button>
+  <button id="openPromote">採用を本生成</button>
+  <button id="export">採用を書き出し</button>
+</div>
+
+<div id="body">
+  <div id="stage">
+    <div class="empty">NO RUN</div>
+    <div id="verdict"></div>
+  </div>
+  <div id="side">
+    <h2>魅せカットと要素</h2>
+    <div id="picks"></div>
+    <h2>判定</h2>
+    <div class="judge">
+      <button id="btnPick">採用</button>
+      <button id="btnDrop">却下</button>
+    </div>
+    <div class="keys" style="margin-top:8px">
+      <b>1</b>／<b>F</b> 採用　<b>0</b>／<b>D</b> 却下　<b>U</b> 取消<br>
+      <b>←→</b> 移動　<b>↑↓</b> 5枚送り
+    </div>
+    <h2>プロンプト</h2>
+    <div id="promptBox"></div>
+    <h2>この回の設定</h2>
+    <div id="meta" class="keys"></div>
+  </div>
+</div>
+
+<div id="strip"></div>
+
+<div class="overlay" id="statsOverlay">
+  <div class="panel">
+    <div class="head">
+      <span>採用率（評価済みの画像だけを母数にする）</span>
+      <span class="spacer"></span>
+      <select id="statsScope">
+        <option value="all">全ラン合計</option>
+        <option value="run">このランだけ</option>
+      </select>
+    </div>
+    <div class="content" id="statsBody"></div>
+    <div class="foot"><button onclick="statsOverlay.classList.remove('open')">閉じる</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="promoteOverlay">
+  <div class="panel">
+    <div class="head"><span>採用した画像を本生成する</span></div>
+    <div class="content">
+      <div class="field">
+        <label>方式</label>
+        <select id="promoteMode">
+          <option value="i2i">ラフを下敷きにする（img2img・構図を保つ）</option>
+          <option value="t2i">同じseedで描き直す（t2i・別物になることがある）</option>
+        </select>
+      </div>
+      <div class="field" id="denoiseField">
+        <label>denoise（小＝ラフに忠実 / 大＝描き直し強）</label>
+        <input type="number" id="promoteDenoise" value="0.5" step="0.05" min="0.1" max="1">
+      </div>
+      <div class="field">
+        <label>ステップ数</label>
+        <input type="number" id="promoteSteps" value="30" min="4" max="100">
+      </div>
+      <div id="promoteSummary" class="keys"></div>
+      <div id="note">
+        ラフと本生成は解像度が違うため、t2i は同じseedでも構図がずれます。選んだ構図を残したいなら img2img を選んでください。<br>
+        denoise を下げても所要時間は減りません（ComfyUI は開始ノイズを下げるだけでステップ数は変えない）。
+        時間を削るならステップ数を下げてください。ラフが良ければ img2img は 20 前後でも十分仕上がります。<br>
+        本生成は新しいランとして記録されるので、仕上がりをもう一度ここで選別できます。
+      </div>
+    </div>
+    <div class="foot">
+      <button onclick="promoteOverlay.classList.remove('open')">キャンセル</button>
+      <button id="promoteRun">投入する</button>
+    </div>
+  </div>
+</div>
+
+<script src="/studio/assets/workflow.js"></script>
+<script>
+const clientId = crypto.randomUUID();
+const $ = id => document.getElementById(id);
+
+let slotLabels = {};   // slot key -> {label, hero}
+let runs = [];
+let run = null;        // full ledger of the selected run
+let view = [];         // items currently being triaged, in strip order
+let cursor = 0;
+
+const post = (path, body) =>
+  fetch(API + path, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); });
+
+const thumbUrl = it => outUrl(it.file, run.run_id) + "&preview=webp";
+const fullUrl = it => outUrl(it.file, run.run_id);
+
+// ---------- load ----------
+async function loadSlotLabels() {
+  const recipe = await fetch(API + "/studio/api/recipe").then(r => r.json());
+  for (const s of recipe.slots || []) slotLabels[s.key] = { label: s.label, hero: !!s.hero };
+}
+
+async function loadRuns(keep) {
+  runs = await fetch(API + "/studio/api/runs").then(r => r.json());
+  const sel = $("runSel");
+  sel.innerHTML = "";
+  for (const r of runs) {
+    const o = document.createElement("option");
+    o.value = r.run_id;
+    o.textContent = `${r.created}  ${r.mode === "rough" ? "ラフ" : "本"} ${r.done}/${r.count}枚  ${r.model.replace(/\.safetensors$/, "")}`;
+    sel.appendChild(o);
+  }
+  if (!runs.length) {
+    $("stage").innerHTML = '<div class="empty">まだランがありません</div>';
+    return;
+  }
+  const wanted = keep || new URLSearchParams(location.search).get("run") || runs[0].run_id;
+  sel.value = runs.some(r => r.run_id === wanted) ? wanted : runs[0].run_id;
+  await loadRun(sel.value);
+}
+
+async function loadRun(runId) {
+  run = await fetch(`${API}/studio/api/runs/${runId}`).then(r => r.json());
+  $("newHint").textContent = "";
+  applyFilter();
+  renderMeta();
+}
+
+function applyFilter() {
+  const f = $("filter").value;
+  view = run.items.filter(it =>
+    f === "all" ? true : f === "unrated" ? !it.rating : it.rating === f);
+  cursor = 0;
+  renderStrip();
+  renderFocus();
+  renderCounts();
+}
+
+// ---------- render ----------
+function renderCounts() {
+  const picked = run.items.filter(i => i.rating === "pick").length;
+  const rated = run.items.filter(i => i.rating).length;
+  const done = run.items.filter(i => i.file).length;
+  $("counts").textContent =
+    `${done}/${run.items.length}枚 生成済 ／ 評価 ${rated} ／ 採用 ${picked}` +
+    (view.length ? ` ／ 表示 ${cursor + 1}/${view.length}` : "");
+}
+
+function renderStrip() {
+  const strip = $("strip");
+  const r = run.meta?.render;
+  const stripH = strip.clientHeight - 18;  // minus padding
+  strip.style.setProperty("--thumb-w",
+    (r && r.height ? Math.round(stripH * r.width / r.height) : 66) + "px");
+  strip.innerHTML = "";
+  view.forEach((it, n) => {
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    cell.dataset.n = n;
+    if (it.file) {
+      const img = document.createElement("img");
+      img.src = thumbUrl(it);
+      img.loading = "lazy";
+      img.onclick = () => { cursor = n; renderFocus(); };
+      cell.appendChild(img);
+    } else {
+      const ph = document.createElement("div");
+      ph.className = "pending";
+      ph.textContent = "待ち";
+      cell.appendChild(ph);
+    }
+    strip.appendChild(cell);
+  });
+  syncStripClasses();
+}
+
+function syncStripClasses() {
+  [...$("strip").children].forEach((cell, n) => {
+    const it = view[n];
+    cell.className = "cell"
+      + (n === cursor ? " focus" : "")
+      + (it.rating ? " " + it.rating : "");
+  });
+}
+
+function renderFocus() {
+  const it = view[cursor];
+  const stage = $("stage");
+  if (!it) {
+    stage.innerHTML = '<div class="empty">該当なし</div>';
+    $("picks").innerHTML = "";
+    $("promptBox").textContent = "";
+    renderCounts();
+    return;
+  }
+  stage.innerHTML = it.file
+    ? `<img src="${fullUrl(it)}">`
+    : '<div class="empty">この番号はまだ生成されていません</div>';
+  const v = document.createElement("div");
+  v.id = "verdict";
+  v.className = it.rating || "";
+  v.textContent = it.rating === "pick" ? "採用" : it.rating === "drop" ? "却下" : "";
+  stage.appendChild(v);
+
+  const picks = $("picks");
+  picks.innerHTML = "";
+  for (const [key, label] of Object.entries(it.picks || {})) {
+    const meta = slotLabels[key] || { label: key, hero: false };
+    const row = document.createElement("div");
+    row.className = "pick-row" + (meta.hero ? " hero" : "");
+    row.innerHTML = `<div class="k"></div><div class="v"></div>`;
+    row.querySelector(".k").textContent = meta.label;
+    row.querySelector(".v").textContent = label;
+    picks.appendChild(row);
+  }
+  $("promptBox").textContent = it.prompt;
+  $("btnPick").className = it.rating === "pick" ? "on" : "";
+  $("btnDrop").className = it.rating === "drop" ? "on" : "";
+  syncStripClasses();
+  scrollStripIntoView();
+  renderCounts();
+}
+
+function scrollStripIntoView() {
+  const cell = $("strip").children[cursor];
+  if (cell) cell.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+}
+
+function renderMeta() {
+  const m = run.meta || {};
+  const r = m.render || {}, f = m.final || {};
+  const loras = (m.loras || []).filter(l => l.name)
+    .map(l => `${l.name.replace(/\.safetensors$/, "")} ${l.strength}`).join(", ");
+  $("meta").innerHTML = [
+    `モデル: ${(m.model || "").replace(/\.safetensors$/, "")}`,
+    loras && `LoRA: ${loras}`,
+    `生成: ${r.width}x${r.height} / ${r.steps}steps / CFG ${m.cfg}`,
+    run.mode === "rough" && `本生成の想定: ${f.width}x${f.height} / ${f.steps}steps`,
+    `sampler: ${m.sampler} / ${m.scheduler}`,
+  ].filter(Boolean).join("<br>");
+}
+
+// ---------- rating ----------
+async function rate(rating) {
+  const it = view[cursor];
+  if (!it) return;
+  it.rating = it.rating === rating ? null : rating;  // pressing the same key undoes it
+  renderFocus();
+  try {
+    await post(`/studio/api/runs/${run.run_id}/rate`, { index: it.index, rating: it.rating });
+  } catch (e) {
+    $("counts").textContent = "保存に失敗: " + e.message;
+  }
+  if (it.rating) move(1);
+}
+
+function move(delta) {
+  if (!view.length) return;
+  cursor = Math.min(view.length - 1, Math.max(0, cursor + delta));
+  renderFocus();
+}
+
+document.addEventListener("keydown", e => {
+  if (document.querySelector(".overlay.open")) {
+    if (e.key === "Escape") document.querySelector(".overlay.open").classList.remove("open");
+    return;
+  }
+  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+  const k = e.key.toLowerCase();
+  if (k === "arrowright") move(1);
+  else if (k === "arrowleft") move(-1);
+  else if (k === "arrowdown") move(5);
+  else if (k === "arrowup") move(-5);
+  else if (k === "1" || k === "f") rate("pick");
+  else if (k === "0" || k === "d") rate("drop");
+  else if (k === "u" || k === "backspace") rate(null);
+  else return;
+  e.preventDefault();
+});
+
+// ---------- stats ----------
+async function showStats() {
+  const scope = $("statsScope").value === "run" ? run.run_id : "all";
+  const stats = await fetch(`${API}/studio/api/stats?run=${scope}`).then(r => r.json());
+  const body = $("statsBody");
+  body.innerHTML = "";
+  const keys = Object.keys(stats).sort((a, b) =>
+    (slotLabels[b]?.hero ? 1 : 0) - (slotLabels[a]?.hero ? 1 : 0));
+  if (!keys.length) {
+    body.innerHTML = '<div class="keys">まだ評価がありません。採用/却下を付けると集計されます。</div>';
+  }
+  for (const key of keys) {
+    const sec = document.createElement("div");
+    sec.className = "stat-slot";
+    const h = document.createElement("h3");
+    h.textContent = slotLabels[key]?.label || key;
+    sec.appendChild(h);
+    for (const row of stats[key]) {
+      const el = document.createElement("div");
+      el.className = "bar-row";
+      el.innerHTML = `<div class="lbl"></div><div class="bar"><i></i></div><div class="num"></div>`;
+      el.querySelector(".lbl").textContent = row.label;
+      el.querySelector(".bar i").style.width = (row.rate * 100).toFixed(0) + "%";
+      el.querySelector(".num").textContent = `${row.picked}/${row.rated}  ${(row.rate * 100).toFixed(0)}%`;
+      sec.appendChild(el);
+    }
+    body.appendChild(sec);
+  }
+  $("statsOverlay").classList.add("open");
+}
+
+// ---------- promote picked roughs to a full-resolution run ----------
+function modelRef() {
+  const m = run.meta;
+  return { kind: m.kind, arch: m.arch, name: m.model, folder: m.folder };
+}
+
+async function promote() {
+  const picked = run.items.filter(i => i.rating === "pick" && i.file);
+  if (!picked.length) return;
+  const btn = $("promoteRun");
+  btn.disabled = true;
+  const m = run.meta, f = m.final || {};
+  const mode = $("promoteMode").value;
+  const denoise = parseFloat($("promoteDenoise").value) || 0.5;
+  const steps = parseInt($("promoteSteps").value) || f.steps;
+  try {
+    const { run_id: newRun } = await post("/studio/api/runs/new", {
+      mode: "final",
+      meta: {
+        ...m, render: { ...f, steps }, final: { ...f, steps },
+        promoted_from: run.run_id, promote_mode: mode,
+      },
+    });
+    await post(`/studio/api/runs/${newRun}/items`, {
+      items: picked.map((it, n) => ({
+        index: n, seed: it.seed, prompt: it.prompt, picks: it.picks,
+        source: { run: run.run_id, index: it.index },
+      })),
+    });
+    for (let n = 0; n < picked.length; n++) {
+      const it = picked[n];
+      const o = {
+        model: modelRef(), loras: m.loras, prompt: it.prompt, negative: m.negative,
+        width: f.width, height: f.height, steps, cfg: m.cfg,
+        sampler: m.sampler, scheduler: m.scheduler, seed: it.seed,
+        prefix: `${newRun}/${String(n).padStart(5, "0")}`,
+      };
+      if (mode === "i2i") {
+        const staged = await post(`/studio/api/runs/${run.run_id}/stage`, { index: it.index });
+        o.i2iImage = staged.name;
+        o.denoise = denoise;
+      }
+      await enqueue(buildWorkflow(o), clientId);
+      $("promoteSummary").textContent = `投入 ${n + 1}/${picked.length}`;
+    }
+    $("promoteOverlay").classList.remove("open");
+    await loadRuns(newRun);
+    $("runSel").value = newRun;
+  } catch (e) {
+    $("promoteSummary").textContent = "失敗: " + e.message;
+  }
+  btn.disabled = false;
+}
+
+// ---------- wiring ----------
+$("runSel").onchange = () => loadRun($("runSel").value);
+$("filter").onchange = applyFilter;
+$("reload").onclick = () => run && loadRun(run.run_id);
+$("btnPick").onclick = () => rate("pick");
+$("btnDrop").onclick = () => rate("drop");
+$("openStats").onclick = showStats;
+$("statsScope").onchange = showStats;
+$("export").onclick = async () => {
+  const res = await post(`/studio/api/runs/${run.run_id}/export`, {});
+  $("counts").textContent = `採用 ${res.copied}枚を picked/${run.run_id}/ に書き出しました`;
+};
+$("openPromote").onclick = () => {
+  const picked = run.items.filter(i => i.rating === "pick" && i.file).length;
+  const f = run.meta.final || {};
+  $("promoteSteps").value = f.steps || 30;
+  $("promoteSummary").textContent =
+    `採用 ${picked}枚を ${f.width}x${f.height} で生成します`;
+  $("promoteRun").disabled = !picked;
+  $("promoteOverlay").classList.add("open");
+};
+$("promoteMode").onchange = () => {
+  $("denoiseField").style.display = $("promoteMode").value === "i2i" ? "block" : "none";
+};
+$("promoteRun").onclick = promote;
+
+// non-disruptive progress check: never rebuilds the list under the user's hands
+setInterval(async () => {
+  if (!run) return;
+  const list = await fetch(API + "/studio/api/runs").then(r => r.json()).catch(() => null);
+  if (!list) return;
+  const me = list.find(r => r.run_id === run.run_id);
+  const shown = run.items.filter(i => i.file).length;
+  if (me && me.done > shown) $("newHint").textContent = `新しく${me.done - shown}枚できています → 更新`;
+}, 20000);
+
+loadSlotLabels().then(loadRuns);
+</script>
+</body>
+</html>
