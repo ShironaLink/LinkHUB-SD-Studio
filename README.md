@@ -41,6 +41,8 @@ ComfyUI 本体には手を加えません。お使いの ComfyUI を「エンジ
 3. **`setup.bat` をダブルクリック。** ComfyUI のフォルダとポート番号を聞かれます。
    - ポータブル版: 展開したフォルダ（例: `D:\ComfyUI_windows_portable`）
    - Stability Matrix: `…\Data\Packages\ComfyUI`
+     （Stability Matrix の画面で設定した起動オプションは引き継がれません。必要なものは、
+     セットアップ後に `config.bat` の `COMFY_ARGS` へ書き足してください）
    - ポート番号はふつう Enter だけで構いません（下の注意を参照）
 
    ComfyUI の Python を自動で見つけて `config.bat` に記録し、詠唱補助装置を入れるか聞いてきます。
@@ -181,6 +183,10 @@ sdgen.bat --stop
 sdgen.bat --help
 ```
 
+出力をほかのプログラムで受け取るとき（パイプやリダイレクト）は、UTF-8 で出力します。
+フォルダ名やモデル名が英数字だけなら気にする必要はありません。日本語を含む場合、コマンドプロンプトの
+`| more` や Windows PowerShell 5.1 の `$o = & .\sdgen.bat ...` では、その部分が文字化けします。
+
 ## ファイルの置き場所
 
 | | 場所 |
@@ -207,6 +213,7 @@ sdgen.bat --help
 | `SDStudio.bat` が「The engine failed to start」と言う | タスクバーの「SD Studio engine」ウィンドウに出ているエラー |
 | 「Port 8188 is already used by another program」と出る | ComfyUI を別に起動したままになっていないか。同時に使うなら `setup.bat` で別のポートにする |
 | ComfyUI を移動した・入れ直した | `setup.bat` をもう一度実行する（場所が変わったことに気づけば `SDStudio.bat` が自動で実行します） |
+| `sdgen.bat` だけが「Python in config.bat was not found」と言う | ComfyUI のフォルダ名に日本語などが入っていないか。入っていると、文字コードを UTF-8 に切り替えたターミナルからは `config.bat` を正しく読めません。ComfyUI を英数字だけの場所へ移して `setup.bat` をやり直す |
 | 生成画面のレシピ欄に「読めません」と出る | `wildcards` のファイルを UTF-8 で保存し直す（メモ帳なら「名前を付けて保存」→ 文字コード UTF-8） |
 | 生成がとても遅い | `setup.bat` の結果に「GPU を使えない」と出ていないか |
 | モデルが一覧に出ない | 置き場所（`checkpoints` か `diffusion_models` か）。置いたあと「モデル再読込」を押したか |

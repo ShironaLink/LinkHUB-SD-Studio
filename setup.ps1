@@ -98,6 +98,15 @@ if ("$comfy$python" -match '%') {
     Say '% を含まない場所へ移してから、もう一度実行してください。' Red
     exit 1
 }
+# config.bat is written in this console's code page and read back by cmd in
+# whatever code page the *calling* console uses. With an ASCII-only path the
+# two can never disagree; otherwise a UTF-8 terminal reads a Shift_JIS path
+# as garbage and sdgen.bat reports that Python was not found.
+if ("$comfy$python" -match '[^ -~]') {
+    Say '  ※ ComfyUI のフォルダ名に日本語などの文字が入っています。ダブルクリックでの起動には問題ありません。' Yellow
+    Say '    ただし文字コードの違うターミナル（UTF-8 に切り替えたコンソールなど）から sdgen.bat を呼ぶと、Python を見つけられません。' Yellow
+    Say '    コマンドやほかのソフトからも使うなら、英数字だけの場所（例: D:\ComfyUI_windows_portable）が安全です。' Yellow
+}
 
 Say 'Python の中身を確認しています（数十秒かかることがあります）...'
 $probe = "import sys, torch, aiohttp; print(sys.version.split()[0], torch.__version__, 'gpu' if torch.cuda.is_available() else 'cpu')"
