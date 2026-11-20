@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """sdgen - SD Studio CLI for agents and humans.
 
-On Windows run it through sdgen.bat, which picks ComfyUI's own Python.
+Run it through sdgen.bat (Windows) or sdgen.sh (macOS); both pick ComfyUI's
+own Python from the config that setup wrote.
 
 Examples:
   sdgen "1girl, silver hair, smile" --model hoseki --lora mylora:0.8
@@ -37,21 +38,28 @@ for _stream in (sys.stdout, sys.stderr):
         _stream.reconfigure(encoding="utf-8")
 
 
+WINDOWS = os.name == "nt"
+SETUP = "setup.bat" if WINDOWS else "setup.command"
+
+
 def _config_port():
-    """PORT from config.bat, so running sdgen.py directly hits the same engine."""
+    """PORT from config.bat / config.sh, so running sdgen.py directly hits the
+    same engine as the launchers."""
+    name, pattern = (("config.bat", r'^\s*set\s+"PORT=(\d+)"') if WINDOWS
+                     else ("config.sh", r"^\s*(?:export\s+)?PORT=[\"']?(\d+)[\"']?\s*$"))
     try:
-        with open(os.path.join(ROOT, "config.bat"), "rb") as fh:
+        with open(os.path.join(ROOT, name), "rb") as fh:
             text = fh.read().decode("ascii", "ignore")
     except OSError:
         return None
-    m = re.search(r'^\s*set\s+"PORT=(\d+)"', text, re.I | re.M)
+    m = re.search(pattern, text, re.I | re.M)
     return int(m.group(1)) if m else None
 
 
 PORT = int(os.environ.get("SD_STUDIO_PORT") or _config_port() or 8188)
 API = f"http://127.0.0.1:{PORT}"
 PORT_BUSY = (f"port {PORT} is used by another program (a ComfyUI left running?). "
-             "Close it, or run setup.bat and choose another port.")
+             f"Close it, or run {SETUP} and choose another port.")
 # The engine is always local. Windows system proxy settings would otherwise
 # apply to 127.0.0.1 too when the bypass list is incomplete.
 _OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
@@ -131,12 +139,39 @@ def ensure_engine():
         return
     if state == "other":
         sys.exit("engine: " + PORT_BUSY)
-    if os.name != "nt":
-        sys.exit("engine: not running (start it with start.bat)")
     print("engine: starting...", flush=True)
     failed = os.path.join(ROOT, "engine.failed")
     if os.path.exists(failed):
         os.remove(failed)
+    if WINDOWS:
+        _spawn_engine_windows()
+        where = "see the 'SD Studio engine' window"
+    else:
+        _spawn_engine_posix()
+        where = "see engine.log"
+    for _ in range(300):
+        time.sleep(1)
+        if engine_state() == "studio":
+            print("engine: ready", flush=True)
+            return
+        if os.path.exists(failed):
+            sys.exit(f"engine: failed to start; {where}")
+    sys.exit(f"engine: did not answer within 5 minutes; {where}")
+
+
+def _spawn_engine_posix():
+    # No window on macOS: the engine runs in its own session, so it outlives
+    # this CLI and a Ctrl+C here does not reach it. Its output goes to
+    # engine.log (overwritten per start) and none of our handles - notably a
+    # captured stdout pipe - is passed on, so callers that read our output
+    # return as soon as we exit. Stop it with `sdgen.sh --stop`.
+    with open(os.path.join(ROOT, "engine.log"), "wb") as log:
+        subprocess.Popen(["/bin/bash", os.path.join(ROOT, "start.sh")], cwd=ROOT,
+                         stdin=subprocess.DEVNULL, stdout=log,
+                         stderr=subprocess.STDOUT, start_new_session=True)
+
+
+def _spawn_engine_windows():
     # A .bat needs a console to run in, so it cannot be spawned detached.
     # `start` gives it its own (minimised) window that outlives this CLI;
     # closing that window is also a way to stop the engine. The command line is
@@ -154,14 +189,6 @@ def ensure_engine():
     subprocess.Popen(f'"{comspec}" /c start "SD Studio engine" /min "{bat}"', cwd=ROOT,
                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                      stderr=subprocess.DEVNULL)
-    for _ in range(300):
-        time.sleep(1)
-        if engine_state() == "studio":
-            print("engine: ready", flush=True)
-            return
-        if os.path.exists(failed):
-            sys.exit("engine: failed to start; see the 'SD Studio engine' window")
-    sys.exit("engine: did not answer within 5 minutes; see the 'SD Studio engine' window")
 
 
 def stop_engine():

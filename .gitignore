@@ -12,3 +12,8 @@ __pycache__/
 .DS_Store
 temp/
 engine.failed
+
+# written by setup.command (machine-specific paths)
+config.sh
+config.sh.tmp
+config.local.sh

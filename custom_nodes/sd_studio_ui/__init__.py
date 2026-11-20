@@ -21,14 +21,14 @@ WEB_DIR = os.path.join(os.path.dirname(__file__), "web")
 # custom_nodes/sd_studio_ui -> custom_nodes -> sd-studio
 # ComfyUI itself lives elsewhere (portable build, Stability Matrix, ...) and
 # loads this node through extra_model_paths.yaml, so the studio root is two
-# levels up from here. start.bat also sets SD_STUDIO_ROOT explicitly.
+# levels up from here. start.bat / start.sh also set SD_STUDIO_ROOT explicitly.
 STUDIO_ROOT = os.environ.get("SD_STUDIO_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", ".."))
 WILDCARD_DIR = os.path.join(STUDIO_ROOT, "wildcards")
 RUNS_DIR = os.path.join(STUDIO_ROOT, "runs")
 
 # 零式Danbooru型詠唱補助装置（github.com/ShironaLink/shirona-prompt-tool）。
-# 単体HTMLなので web/ へコピーせず、setup.bat が prompt-tool/ に clone したまま
+# 単体HTMLなので web/ へコピーせず、setup.bat / setup.command が prompt-tool/ に clone したまま
 # 配信する。そうしておけば git pull がそのまま更新になる。無くても他の画面は動く。
 PROMPT_TOOL_DIR = os.environ.get("SD_STUDIO_PROMPT_TOOL") or os.path.join(
     STUDIO_ROOT, "prompt-tool")
@@ -607,7 +607,7 @@ async def studio_ping(request):
 @routes.post("/studio/api/engine/stop")
 async def studio_engine_stop(request):
     """Shut the engine down. `sdgen --stop` uses this so no OS-specific process
-    killing is needed; the console window that ran start.bat closes with it."""
+    killing is needed; start.bat / start.sh then end on their own."""
     _exit_soon()
     return web.json_response({"status": "stopping"})
 
