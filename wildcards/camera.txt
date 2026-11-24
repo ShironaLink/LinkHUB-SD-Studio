@@ -1,18 +1,18 @@
 # カメラ — レンズとシャッターの都合。魅せカットと直交させる軸その2。
 # 「カメラをぐるぐる回しながら同じ一瞬を撮る」ための振り幅。
 
-浅い被写界深度 | shallow depth of field, creamy bokeh background
-望遠圧縮 | telephoto lens, compressed perspective, tight background
+浅い被写界深度 | shallow depth of field, creamy bokeh background | 場所
+望遠圧縮 | telephoto lens, compressed perspective, tight background | 場所
 広角の歪み | wide angle lens, slight barrel distortion, exaggerated foreground
 魚眼 | fisheye distortion, strong curvature toward the edges, subject bulging at the center
 手持ちのブレ | handheld camera, slight motion blur, candid feel
 一瞬を止める | high shutter speed freezing motion, every strand of hair sharp
-流れるシャッター | slow shutter, motion trails behind her, background streaking
+流れるシャッター | slow shutter, motion trails behind her, background streaking | 場所
 逆光フレア | shooting into the light, lens flare across the frame
 ソフトフォーカス | soft focus, gentle glow around the highlights
 フィルムグレイン | 35mm film photograph, visible grain, slightly faded colors
 セルフィー風 | selfie framing, arm's length from the lens, casual angle
-ローキー | low key exposure, deep shadows, small bright area
+ローキー | low key exposure, deep shadows, small bright area | 場所
 ハイキー | high key exposure, bright and airy, almost blown out highlights
 マクロ寄り | macro-like closeness, extremely narrow focal plane
-定点の引き | locked-off wide shot, static and quiet framing
+定点の引き | locked-off wide shot, static and quiet framing | 場所

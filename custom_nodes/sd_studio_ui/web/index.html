@@ -504,7 +504,7 @@ function syncAlpha() {
       .filter(Boolean).join(", ");
   } else {
     note.textContent = cb.checked
-      ? `RGBA VAE・RGBA LoRA ${ALPHA.strength.toFixed(1)}・「${ALPHA.trigger}」を自動で付けます。レシピの背景・場所は使いません。`
+      ? `RGBA VAE・RGBA LoRA ${ALPHA.strength.toFixed(1)}・「${ALPHA.trigger}」を自動で付けます。レシピの背景・場所と「${ALPHA.skipTag}」印の選択肢は使いません。`
       : "";
   }
   Recipe.setAlpha(alphaOn());

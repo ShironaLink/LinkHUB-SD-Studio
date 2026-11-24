@@ -14,9 +14,12 @@ const Recipe = (() => {
   let draw = null;        // {picks: {key: {label, text}}, prompt}
   let ctx = null;         // supplied by index.html
   let editing = null;     // slot key currently open in the editor
-  let alpha = false;      // transparent output: ALPHA.skipSlots are left out of every draw
+  let alpha = false;      // transparent output: ALPHA.skipSlots and options tagged
+                          // ALPHA.skipTag are left out of every draw
 
   const skipped = key => alpha && ALPHA.skipSlots.includes(key);
+  /** The options a draw may use: all of them, minus the place-drawing ones when transparent. */
+  const poolOf = s => (alpha ? s.options.filter(o => !alphaSkips(o)) : s.options);
 
   const $ = id => document.getElementById(id);
   const slotOf = key => recipe.slots.find(s => s.key === key);
@@ -58,15 +61,26 @@ const Recipe = (() => {
 
       const sel = document.createElement("select");
       sel.className = "slot-sel";
-      const add = (value, text) => {
+      const add = (value, text, disabled = false) => {
         const o = document.createElement("option");
-        o.value = value; o.textContent = text;
+        o.value = value; o.textContent = text; o.disabled = disabled;
         sel.appendChild(o);
       };
-      add(RANDOM, `🎲 ランダム (${s.options.length})`);
+      const pool = poolOf(s);
+      const out = s.options.length - pool.length;  // tagged 場所 while transparent
+      add(RANDOM, out ? `🎲 ランダム (${pool.length}/${s.options.length})` : `🎲 ランダム (${s.options.length})`);
       add(OFF, "— 使わない");
-      for (const o of s.options) add(o.label, o.label);
-      sel.value = state[s.key];
+      for (const o of s.options) {
+        const off = alpha && alphaSkips(o);
+        add(o.label, off ? `${o.label}（透過では使わない）` : o.label, off);
+      }
+      // A fixed pick that transparency rules out draws from the pool instead;
+      // the choice itself is kept and comes back when transparency is turned off.
+      const fixed = s.options.find(o => o.label === state[s.key]);
+      sel.value = fixed && alpha && alphaSkips(fixed) ? RANDOM : state[s.key];
+      if (out && !skipped(s.key)) {
+        sel.title = `透過PNGのあいだは「${ALPHA.skipTag}」印の${out}件を抽選から外す（背景を描かせて透過と衝突するため）`;
+      }
       sel.onchange = () => { state[s.key] = sel.value; reroll(); };
       if (skipped(s.key)) {
         sel.disabled = true;
@@ -93,8 +107,9 @@ const Recipe = (() => {
     const picks = {};
     for (const s of recipe.slots) {
       const mode = state[s.key];
-      if (mode === OFF || !s.options.length || skipped(s.key)) continue;
-      picks[s.key] = mode === RANDOM ? pick(s.options) : (s.options.find(o => o.label === mode) || pick(s.options));
+      const pool = poolOf(s);
+      if (mode === OFF || !pool.length || skipped(s.key)) continue;
+      picks[s.key] = (mode !== RANDOM && pool.find(o => o.label === mode)) || pick(pool);
     }
     return picks;
   }
@@ -290,7 +305,7 @@ const Recipe = (() => {
     load().then(updateEstimate);
   }
 
-  /** Turn transparent output on/off: greys out the skipped slots and redraws. */
+  /** Turn transparent output on/off: greys out the skipped slots and 場所 options, then redraws. */
   function setAlpha(on) {
     if (on === alpha) return;
     alpha = on;

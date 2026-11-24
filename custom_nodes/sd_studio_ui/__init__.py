@@ -311,8 +311,11 @@ async def studio_models(request):
 #
 # One .txt per slot in wildcards/, one option per line, in the form
 #   ラベル | prompt text        (a line without "|" is used as both)
+#   ラベル | prompt text | タグ  (optional third column: comma-separated tags)
 # "#" comments and blank lines are ignored. _slots.json holds the slot order
 # and the prompt template whose __key__ placeholders the options fill in.
+# Tags change how an option is drawn, never the prompt: "場所" marks an option
+# that makes the model paint a place, so transparent runs skip it.
 # ---------------------------------------------------------------------------
 
 SLOTS_FILE = os.path.join(WILDCARD_DIR, "_slots.json")
@@ -326,9 +329,11 @@ def _parse_options(text):
         line = line.strip()
         if not line or line.startswith("#"):
             continue
-        label, sep, prompt = line.partition("|")
+        label, sep, rest = line.partition("|")
+        prompt, _, tags = rest.partition("|")
         label = label.strip()
-        options.append({"label": label, "text": prompt.strip() if sep else label})
+        options.append({"label": label, "text": prompt.strip() if sep else label,
+                        "tags": [t.strip() for t in re.split(r"[,、]", tags) if t.strip()]})
     return options
 
 

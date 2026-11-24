@@ -6,21 +6,21 @@
 膝上 | cowboy shot, framed from mid-thigh up
 全身 | full body shot, whole figure in frame
 足元から見上げる | dramatic low angle from near the ground, looking up at her
-真上から見下ろす | overhead shot looking straight down at her
-前景ボケ越し | shot through blurred foreground objects framing her
+真上から見下ろす | overhead shot looking straight down at her | 場所
+前景ボケ越し | shot through blurred foreground objects framing her | 場所
 対角線構図 | strong diagonal composition, her body cutting across the frame
 日の丸構図 | dead-center composition, symmetrical framing
 余白を大きく取る | rule of thirds, she occupies one third, large empty space beside her
 画面からはみ出す | cropped composition, part of her head or limbs running out of frame
-鏡に映る自分 | standing in front of a large mirror, her back to the viewer and her face visible in the reflection
-窓越し | shot through a window, glass and reflections between viewer and her
-肩越しの視点 | over-the-shoulder view from just behind her
+鏡に映る自分 | standing in front of a large mirror, her back to the viewer and her face visible in the reflection | 場所
+窓越し | shot through a window, glass and reflections between viewer and her | 場所
+肩越しの視点 | over-the-shoulder view from just behind her | 場所
 見上げるバストアップ | low angle bust shot, chin slightly raised
 
 # --- 2026-08-21 Claude追加分 ---
-地面すれすれ | ground level shot, blurred grass and pebbles in the extreme foreground, her figure beyond
-真横のシルエット | perfect side profile view, her silhouette strong against the background
-一点透視の廊下 | centered in a long corridor, one point perspective lines converging on her
-ドアの隙間から | seen through a partially open door, the doorframe cutting one side of the frame
-広大な余白の点景 | tiny figure low in the frame, vast sky filling everything above her
-水たまりの反射 | crouching beside a puddle, her reflection visible in the water below her
+地面すれすれ | ground level shot, blurred grass and pebbles in the extreme foreground, her figure beyond | 場所
+真横のシルエット | perfect side profile view, her silhouette strong against the background | 場所
+一点透視の廊下 | centered in a long corridor, one point perspective lines converging on her | 場所
+ドアの隙間から | seen through a partially open door, the doorframe cutting one side of the frame | 場所
+広大な余白の点景 | tiny figure low in the frame, vast sky filling everything above her | 場所
+水たまりの反射 | crouching beside a puddle, her reflection visible in the water below her | 場所

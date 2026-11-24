@@ -26,7 +26,16 @@ const ALPHA = {
   strength: 1.0,              // the author's tested value; 1.5 adds debris
   trigger: "transparent background",
   skipSlots: ["background"],  // a drawn location fights the trigger
+  // Options elsewhere that still make the model draw a place (a puddle, a
+  // mirror, "deep surrounding dark") carry this tag in the wildcard's third
+  // column — "ラベル | prompt | 場所" — and are left out of transparent draws.
+  skipTag: "場所",
 };
+
+/** True if this recipe option is left out of transparent draws. */
+function alphaSkips(option) {
+  return (option.tags || []).includes(ALPHA.skipTag);
+}
 
 /** Prompt with the transparency trigger in front (no-op if already present). */
 function alphaPrompt(p) {

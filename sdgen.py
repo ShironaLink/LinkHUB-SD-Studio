@@ -81,7 +81,10 @@ NEG_DEFAULT = "worst quality, low quality, bad hands"
 # Transparent output for Anima (huggingface.co/localai0301/Anima-RGBA).
 # Mirrors ALPHA in custom_nodes/sd_studio_ui/web/assets/workflow.js.
 ALPHA = {"vae": "anima_rgba_vae.safetensors", "lora": "anima_rgba_lora.safetensors",
-         "strength": 1.0, "trigger": "transparent background", "skip_slots": ["background"]}
+         "strength": 1.0, "trigger": "transparent background", "skip_slots": ["background"],
+         # recipe options tagged this in their third column ("ラベル | prompt | 場所")
+         # make the model paint a place, so transparent runs leave them out too
+         "skip_tag": "場所"}
 
 
 def alpha_prompt(p):
@@ -462,10 +465,15 @@ def run_batch(a):
     }})["run_id"]
 
     skip = ALPHA["skip_slots"] if a.alpha else []  # a drawn location fights the trigger
+    pools = {}
+    for s in recipe["slots"]:
+        opts = [o for o in s["options"]
+                if not (a.alpha and ALPHA["skip_tag"] in o.get("tags", []))]
+        if opts and s["key"] not in skip:
+            pools[s["key"]] = opts
     items = []
     for i in range(a.run):
-        picks = {s["key"]: random.choice(s["options"])
-                 for s in recipe["slots"] if s["options"] and s["key"] not in skip}
+        picks = {k: random.choice(opts) for k, opts in pools.items()}
         prompt = compose_prompt(recipe, picks)
         items.append({"index": i, "seed": random.randrange(2 ** 48),
                       "prompt": alpha_prompt(prompt) if a.alpha else prompt,
